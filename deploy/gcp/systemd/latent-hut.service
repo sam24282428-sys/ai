@@ -1,0 +1,15 @@
+[Unit]
+Description=Latent Memory Mountain Hut Read-Only Web UI (127.0.0.1:8766)
+After=network-online.target
+
+[Service]
+Type=simple
+User=__GCP_USER__
+WorkingDirectory=__STACK_DIR__
+EnvironmentFile=-/home/__GCP_USER__/.cyberboss/.env
+ExecStart=/bin/bash -c 'exec /usr/bin/python3 __STACK_DIR__/vendor/Latent-memory/src/mcp_server.py --corpus /home/__GCP_USER__/.cyberboss/latent/memory --threads /home/__GCP_USER__/.cyberboss/latent/threads.jsonl --timezone Asia/Shanghai --http 127.0.0.1:8766 --ui __STACK_DIR__/vendor/Latent-memory/hut --persona /home/__GCP_USER__/.cyberboss/weixin-instructions.md --token "$$(cat /home/__GCP_USER__/.cyberboss/latent/mcp.token)" --admin-token "$$(cat /home/__GCP_USER__/.cyberboss/latent/hut.token)"'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

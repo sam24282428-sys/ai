@@ -1,0 +1,20 @@
+[Unit]
+Description=Cyberboss WeChat Companion Stack (Gemini Client + Timeline + Latent Memory, No Leto)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__GCP_USER__
+WorkingDirectory=__STACK_DIR__
+Environment="PATH=/home/__GCP_USER__/.local/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="CYBERBOSS_HOME=__STACK_DIR__"
+Environment="CYBERBOSS_STATE_DIR=/home/__GCP_USER__/.cyberboss"
+EnvironmentFile=-/home/__GCP_USER__/.cyberboss/.env
+ExecStart=/usr/bin/node __STACK_DIR__/bin/cyberboss.js start --checkin
+KillMode=control-group
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
