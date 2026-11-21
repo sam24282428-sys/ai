@@ -44,16 +44,21 @@ function buildMergedInboundPrepared({
   };
 }
 
-function assembleRuntimeTurnText({ prepared, config = {}, visionContext = {} }) {
+function assembleRuntimeTurnText({ prepared, config = {}, visionContext = {}, memoryContext = "" }) {
   const lines = [];
   const localTime = formatWechatLocalTime(prepared?.receivedAt);
   const originalText = normalizeText(prepared?.originalText ?? prepared?.text);
+  const normalizedMemory = normalizeText(memoryContext);
   const attachments = Array.isArray(prepared?.attachments) ? prepared.attachments : [];
   const attachmentFailures = Array.isArray(prepared?.attachmentFailures) ? prepared.attachmentFailures : [];
   const imageAttachments = attachments.filter((item) => isImageAttachmentItem(item));
   const visualItems = Array.isArray(visionContext.items) ? visionContext.items : [];
   const visionErrors = Array.isArray(visionContext.errors) ? visionContext.errors : [];
 
+  if (normalizedMemory) {
+    lines.push(normalizedMemory);
+    lines.push("");
+  }
   if (localTime) {
     lines.push(`[${localTime}]`);
   }

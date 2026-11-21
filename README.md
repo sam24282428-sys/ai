@@ -14,6 +14,10 @@
 - **四层长期记忆与山屋可视化（Latent Memory）**：
   - 自动挂载 8 个 `latent_*` MCP 工具（`latent_session_start`、`latent_search`、`latent_append`、`latent_supersede`、`latent_correct`、`latent_cleanup`、`latent_unresolved`、`latent_thread_close`）。
   - 涵盖「人格设定 + 纪实记忆库 + 未解决事项清单 + 跨会话线索快照」四层记忆结构，自带只读 Web 可视化面板（「山屋」）。
+- **轻量化记忆强化与独立节拍（专为低配 VPS 设计，纯 Python/SQLite 零向量模型开销）**：
+  - **代理层强制记忆注入**：在每条微信消息进入模型前自动拼入未完事项、最近线索与关联记忆，并同步留存原始对话（`transcripts/YYYY-MM-DD.jsonl`）。
+  - **赫布联想与夜间梦境巩固（Dream Pass）**：基于 SQLite 维护记忆节点共现权重与 1-hop 联想，每日凌晨自动执行边权衰减、跨天概念关联、近义去重与原始对话核查（`dream-reports/`）。
+  - **AI 独立节拍与兴趣读报**：每日自动抓取 Hacker News 科技/AI 热点并写入心跳日志（`newspaper/`、`heartbeat/`），在白天主动查岗时自然附带感兴趣的话题分享。
 - **高可用多模型运行时**：
   - 原生支持 Gemini 客户端（`agy`）、Codex（`app-server`）与 Claude Code。
   - Gemini 运行时内置多模型容量故障转移链（`gemini-4-hydrogen-medium` -> `gemini-4-neon-low` -> `gemini-4-argon-low` -> `gemini-4-hydrogen-low`），自动屏蔽上游瞬时 `503 No capacity available` 报错并无感重试。
@@ -68,6 +72,11 @@ CYBERBOSS_CHANNEL=weixin
 CYBERBOSS_RUNTIME=gemini
 CYBERBOSS_ENABLE_CHECKIN=true
 CYBERBOSS_ENABLE_LATENT_MEMORY=true
+
+# 轻量化记忆注入、梦境巩固与独立读报（可选，默认开启）
+CYBERBOSS_MEMORY_INJECTION=true
+CYBERBOSS_DREAM_ENABLED=true
+CYBERBOSS_PRESENCE_NEWSPAPER=true
 
 # Gemini 客户端配置
 CYBERBOSS_GEMINI_COMMAND=agy

@@ -5,6 +5,8 @@ const { SessionStore } = require("../adapters/runtime/codex/session-store");
 const { CheckinConfigStore, resolveDefaultCheckinRange } = require("../core/checkin-config-store");
 const { resolvePreferredSenderId, resolvePreferredWorkspaceRoot } = require("../core/default-targets");
 const { SystemMessageQueueStore } = require("../core/system-message-queue-store");
+const { createMemoryInjector } = require("../services/memory-injector");
+const { createPresenceService } = require("../services/presence-service");
 
 const INTERNAL_CHECKIN_TRIGGER_TEMPLATE = "%USER% comes to mind again.";
 
@@ -13,6 +15,8 @@ async function runSystemCheckinPoller(config) {
   const queue = new SystemMessageQueueStore({ filePath: config.systemMessageQueueFile });
   const checkinConfigStore = new CheckinConfigStore({ filePath: config.checkinConfigFile });
   const sessionStore = new SessionStore({ filePath: config.sessionsFile });
+  const memoryInjector = createMemoryInjector(config);
+  const presenceService = createPresenceService(config, memoryInjector);
   const target = resolvePollerTarget({ config, account, sessionStore });
   const defaultRange = resolveDefaultCheckinRange();
   let currentRange = checkinConfigStore.getRange(defaultRange);
@@ -27,6 +31,8 @@ async function runSystemCheckinPoller(config) {
     console.log(`[cyberboss] next checkin in ${Math.round(delayMs / 60000)}m at ${wakeAt}`);
     await sleep(delayMs);
 
+    const maintenance = await presenceService.runMaintenanceTick().catch(() => ({ newspaperToShare: null }));
+
     if (queue.hasPendingForAccount(account.accountId)) {
       console.log("[cyberboss] checkin skipped: pending system message still in queue");
       continue;
@@ -37,7 +43,7 @@ async function runSystemCheckinPoller(config) {
       accountId: account.accountId,
       senderId: target.senderId,
       workspaceRoot: target.workspaceRoot,
-      text: buildCheckinTrigger(config),
+      text: buildCheckinTrigger(config, maintenance?.newspaperToShare || null),
       createdAt: new Date().toISOString(),
     });
     console.log(`[cyberboss] checkin queued id=${queued.id}`);
@@ -105,9 +111,22 @@ function formatRangeMinutes(range) {
   return `${Math.round(range.minIntervalMs / 60000)}m-${Math.round(range.maxIntervalMs / 60000)}m`;
 }
 
-function buildCheckinTrigger(config) {
+function buildCheckinTrigger(config, newspaper = null) {
   const userName = normalizeText(config?.userName) || "the user";
-  return INTERNAL_CHECKIN_TRIGGER_TEMPLATE.replace("%USER%", userName);
+  const base = INTERNAL_CHECKIN_TRIGGER_TEMPLATE.replace("%USER%", userName);
+  if (!newspaper || !Array.isArray(newspaper.items) || !newspaper.items.length) {
+    return base;
+  }
+  const headlines = newspaper.items
+    .slice(0, 3)
+    .map((item) => `- ${item.title} (${item.url})`)
+    .join("\n");
+  return [
+    base,
+    "",
+    "[Presence Newspaper — optional personal reading from today's tech/AI feed; feel free to share one interesting item naturally if appropriate, or just keep it in your own awareness:]",
+    headlines,
+  ].join("\n");
 }
 
 module.exports = { runSystemCheckinPoller };

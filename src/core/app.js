@@ -20,6 +20,7 @@ const {
   takeImageOnlyBatchMessages,
 } = require("./inbound-turn");
 const { resolveVisionContext } = require("../services/vision-context");
+const { createMemoryInjector } = require("../services/memory-injector");
 const {
   buildWeixinHelpText,
 } = require("./command-registry");
@@ -74,6 +75,7 @@ class CyberbossApp {
     this.projectServices = projectTooling.services;
     this.projectToolHost = projectTooling.toolHost;
     this.runtimeContextStore = projectTooling.runtimeContextStore;
+    this.memoryInjector = createMemoryInjector(config);
     this.runtimeAdapter = createRuntimeAdapter(config);
     this.threadStateStore = new ThreadStateStore();
     this.systemMessageQueue = new SystemMessageQueueStore({ filePath: config.systemMessageQueueFile });
@@ -504,17 +506,29 @@ class CyberbossApp {
         attachments: [],
       };
     }
+    if (prepared?.originalText) {
+      this.memoryInjector.appendTranscriptEntry({
+        role: "user",
+        text: prepared.originalText,
+        timestamp: prepared.receivedAt,
+      });
+    }
+    const memoryContextPromise = this.memoryInjector
+      .buildMemoryContextBlock({ userText: prepared?.originalText || prepared?.text || "" })
+      .catch(() => "");
     const visionContext = await resolveVisionContext({
       prepared,
       config: this.config,
       runtimeAdapter: this.runtimeAdapter,
       model,
     });
+    const memoryContext = await memoryContextPromise;
     return {
       text: assembleRuntimeTurnText({
         prepared,
         config: this.config,
         visionContext,
+        memoryContext,
       }),
       attachments: Array.isArray(visionContext.runtimeAttachments) ? visionContext.runtimeAttachments : [],
       visionContext,
@@ -1462,6 +1476,12 @@ class CyberbossApp {
     await this.streamDelivery.handleRuntimeEvent(event);
     if (!event) {
       return;
+    }
+    if (event.type === "runtime.reply.completed" && event?.payload?.text) {
+      this.memoryInjector.appendTranscriptEntry({
+        role: "assistant",
+        text: event.payload.text,
+      });
     }
     if (event.type === "runtime.turn.completed" || event.type === "runtime.turn.failed") {
       const completedRunKey = buildRunKey(event.payload.threadId, event.payload.turnId);

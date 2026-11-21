@@ -89,6 +89,9 @@ function readConfig() {
     latentCorpusDir: readTextEnv("CYBERBOSS_LATENT_CORPUS_DIR") || path.join(stateDir, "latent", "memory"),
     latentThreadsFile: readTextEnv("CYBERBOSS_LATENT_THREADS_FILE") || path.join(stateDir, "latent", "threads.jsonl"),
     latentHutPort: readIntEnv("CYBERBOSS_LATENT_HUT_PORT") || 8766,
+    memoryInjectionEnabled: readOptionalBoolEnv("CYBERBOSS_MEMORY_INJECTION") !== false,
+    dreamEnabled: readOptionalBoolEnv("CYBERBOSS_DREAM_ENABLED") !== false,
+    presenceNewspaperEnabled: readOptionalBoolEnv("CYBERBOSS_PRESENCE_NEWSPAPER") !== false,
     sessionsFile: path.join(stateDir, "sessions.json"),
     startWithCheckin: (mode === "start" && hasArgFlag(argv, "--checkin")) || readBoolEnv("CYBERBOSS_ENABLE_CHECKIN"),
   };
